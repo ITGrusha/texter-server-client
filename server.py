@@ -1,5 +1,5 @@
 import socket as so
-FILENAME = 'test.txt'
+from settings import *
 
 s = so.socket()
 
