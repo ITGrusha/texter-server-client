@@ -1,6 +1,7 @@
 import socket as so
 from settings import *
 import logging.config
+import threading
 
 logging.config.fileConfig('logger.conf')
 logger = logging.getLogger(name='Texter.TexterServer')
@@ -16,9 +17,9 @@ logger.info(f'Socket binded to {port} port')
 s.listen()
 logger.info('Socket is listening')
 
-while True:
-    conn, address = s.accept()
-    logger.info(f'Got a connection from {address}')
+
+def accept_connection(conn, addr):
+    logger.info(f'Got a connection from {addr}')
     with open(FILENAME, 'r') as file:
         lines_str = ''.join(file.readlines())
         file.close()
@@ -30,25 +31,31 @@ while True:
 
         logger.info('Successfully sent file to remote')
 
-        logger.info(f'Waiting for response from {address}')
+        logger.info(f'Waiting for response from {addr}')
         while True:
             try:
                 byte_data = conn.recv(1)
             except so.error as e:
                 byte_data = END_BYTE
-                logger.error(f'Lost connection with {address}')
+                logger.error(f'Lost connection with {addr}')
             if byte_data == SAVE_BYTE:
-                logger.info(f'Updating file from {address}')
+                logger.info(f'Updating file from {addr}')
                 data_size = int.from_bytes(conn.recv(16), 'big')
                 data = conn.recv(data_size)
                 data_str = data.decode('utf-8')
                 logger.info(f'Got {len(data)} / {data_size} bytes of data')
                 with open(FILENAME, 'w') as file_:
                     file_.write(data_str)
-                    logger.info(f'Wrote data from {address} to file')
+                    logger.info(f'Wrote data from {addr} to file')
             elif byte_data == END_BYTE:
-                logger.info(f'Connection with {address} closed by remote')
+                logger.info(f'Connection with {addr} closed by remote')
                 break
 
     conn.close()
     logger.info('program stopped')
+
+
+while True:
+    connection, address = s.accept()
+    t = threading.Thread(None, accept_connection, args=[connection, address])
+    t.start()
