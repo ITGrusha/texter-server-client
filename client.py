@@ -1,8 +1,11 @@
 import socket as so
-import time
 import tkinter as tk
 import tkinter.messagebox
 from settings import *
+import logging.config
+
+logging.config.fileConfig('logger.conf')
+logger = logging.getLogger(name='Texter.TexterClient')
 
 
 class Texter(object):
@@ -27,16 +30,17 @@ class Texter(object):
         self.show_contents()
 
         self.__window.mainloop()
-        self.disconnect()
 
     def __del__(self):
-        self.s.close()
+        self.disconnect()
 
     def connect(self):
+        logger.debug(f'Trying to connect to {(self.host, self.port)}')
         try:
             self.s.connect((self.host, self.port))
+            logger.info(f'Socket successfully connected to {self.host}:{self.port}')
         except so.error as e:
-            print(f'Connection refused({e})!')
+            logger.info(f'Connection refused({e})!')
             if tkinter.messagebox.askyesno(
                     'Connection refused!',
                     f'Connection refused\n{e}\nDo you want to try again?'
@@ -46,6 +50,7 @@ class Texter(object):
                 self.__window.destroy()
 
     def adjust_text(self):
+        logger.debug(f'Adjusting file string before sending to server')
         text: str = self.__text_box.get(1., tk.END)
         result = ''
 
@@ -66,10 +71,14 @@ class Texter(object):
         self.__text = result
 
     def get_file(self):
+        logger.info(f'Getting file size from server')
+
         file_size = int.from_bytes(self.s.recv(16), "big")
-        print(f'Going to receive {file_size} bytes of data')
+        logger.info(f'Going to receive {file_size} bytes of data')
 
         lines_str = self.s.recv(file_size).decode('utf-8')
+        logger.info('Successfully got file')
+
         lines = lines_str.split('\n')
         self.__lines_count = len(lines)
 
@@ -91,12 +100,14 @@ class Texter(object):
         self.adjust_text()
 
         encoded = self.__text.encode('utf-8')
-        print('Sending to server...')
+        logger.info('Sending our version to server...')
 
         self.s.send(SAVE_BYTE)
         self.s.send(len(encoded).to_bytes(16, 'big'))
         self.s.send(encoded)
+        logger.info(f'Successfully sent {len(encoded)} bytes od data!')
 
     def disconnect(self):
+        logger.info(f'Disconnected from {self.host}:{self.port}')
         self.s.send(END_BYTE)
         self.s.close()
