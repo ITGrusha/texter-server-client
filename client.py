@@ -107,6 +107,17 @@ class Texter(object):
         self.s.send(encoded)
         logger.info(f'Successfully sent {len(encoded)} bytes od data!')
 
+    def who(self):
+        logger.info(f'Sent who command')
+        data = 'who'.encode('utf-8')
+        data += bytes(255)
+        data = data[0:255]
+        self.s.send(COMMAND_BYTE)
+        self.s.send(data)
+        response = self.s.recv(256).decode('utf-8').replace('\x00', '')
+        print(response)
+        logger.info(f'Received who response')
+
     def disconnect(self):
         logger.info(f'Disconnected from {self.host}:{self.port}')
         self.s.send(END_BYTE)
