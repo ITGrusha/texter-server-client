@@ -1,5 +1,8 @@
+import math
 import socket as so
+import time
 from settings import *
+from sys import getsizeof
 
 s = so.socket()
 
@@ -17,13 +20,32 @@ while True:
     conn, address = s.accept()
     print(f'Got a connection from {address}')
     with open(FILENAME, 'r') as file:
-        lines = file.readlines()
-        print(f'File contains {len(lines)} lines')
-        conn.send(len(lines).to_bytes(8, 'big'))
-        for line in lines:
-            conn.send(line.encode())
-        # conn.send(bytes(lines))
+        lines_str = ''.join(file.readlines())
+        file.close()
 
-    conn.send(b'Thank You')
-    conn.send(b'Goodbye')
+        to_send = lines_str.encode('utf-8')
+
+        print(f'File contains {len(to_send)} bytes of data')
+
+        conn.send(len(to_send).to_bytes(16, 'big'))
+        conn.send(to_send)
+
+        while True:
+            try:
+                byte_data = conn.recv(1)
+            except so.error as e:
+                byte_data = END_BYTE
+            if byte_data == SAVE_BYTE:
+                print('Updating file')
+                data_size = int.from_bytes(conn.recv(16), 'big')
+                data = conn.recv(data_size)
+                data_str = data.decode('utf-8')
+                with open(FILENAME, 'w') as file:
+                    file.write(data_str)
+            elif byte_data == END_BYTE:
+                print('Connection closed by remote')
+                break
+
+    # conn.send(b'Thank You\n')
+    # conn.send(b'Goodbye')
     conn.close()
