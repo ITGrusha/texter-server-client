@@ -47,12 +47,23 @@ def accept_connection(conn, addr):
                 with open(FILENAME, 'w') as file_:
                     file_.write(data_str)
                     logger.info(f'Wrote data from {addr} to file')
+            elif byte_data == COMMAND_BYTE:
+                commands_str = conn.recv(255).decode().replace('\x00', '')
+                commands = [x.strip() for x in commands_str.strip().split(';')]
+                for command in commands:
+                    if command.lower() == 'who':
+                        logger.info(f'Got Who command form {addr}')
+                        response = WHO_STR.encode('utf-8')
+                        response += bytes(256)
+                        response = response[0:256]
+                        conn.send(response)
+                        logger.info(f'Send who response to {addr}')
             elif byte_data == END_BYTE:
-                logger.info(f'Connection with {addr} closed by remote')
+                logger.info(f'Connection with {addr} is closing by remote')
                 break
 
     conn.close()
-    logger.info('program stopped')
+    logger.info(f'Connection with {addr} closed')
 
 
 while True:
