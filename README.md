@@ -15,4 +15,4 @@ You can change `settings.py` and `logger.conf` to change filename, etc.
 Feel free to create issues and / or make PRs
 
 # Contributors:
-Author: [Mykola Basmakov](https://github.com/ITGrusha)
+Author: [Mykola Bashmakov](https://github.com/ITGrusha)
